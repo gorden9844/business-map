@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Web Hero — мини-игра</title>
+<style>
+*{box-sizing:border-box}body{margin:0;overflow:hidden;background:#07111f;color:#fff;font-family:system-ui,Arial,sans-serif}
+canvas{display:block;width:100vw;height:100vh}
+#ui{position:fixed;left:18px;top:16px;z-index:2;pointer-events:none;text-shadow:0 2px 5px #000}
+#ui h1{margin:0 0 6px;font-size:22px}#score{font-size:17px}
+#help{position:fixed;right:18px;top:16px;text-align:right;opacity:.85;font-size:14px;line-height:1.5}
+#start{position:fixed;inset:0;display:grid;place-items:center;background:linear-gradient(#06101dcc,#07111fcc);z-index:3}
+.card{max-width:430px;padding:30px;border:1px solid #ffffff33;border-radius:22px;background:#0d1b2dcc;backdrop-filter:blur(8px);text-align:center;box-shadow:0 20px 60px #0008}
+button{border:0;border-radius:999px;padding:13px 25px;background:#e52335;color:#fff;font-weight:800;font-size:16px;cursor:pointer}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="ui"><h1>🕷️ WEB HERO</h1><div id="score">Очки: 0 · Жизни: 3</div></div>
+<div id="help">← → / A D — движение<br>Пробел — пауза<br>ЛКМ — паутина</div>
+<div id="start"><div class="card">
+<h2>Web Hero</h2>
+<p>Мини-аркада про супергероя-паука.<br>Качайся на паутине, собирай звёзды и не врезайся в дронов.</p>
+<button id="go">Начать игру</button>
+</div></div>
+<script>
+const c=document.getElementById('game'),x=c.getContext('2d'),scoreEl=document.getElementById('score');
+let W,H,dpr,hero,platforms,stars,drones,web,score,lives,running=false,paused=false,last=0,spawn=0;
+const keys={};
+function resize(){dpr=devicePixelRatio||1;W=innerWidth;H=innerHeight;c.width=W*dpr;c.height=H*dpr;x.setTransform(dpr,0,0,dpr,0,0);reset(false)}
+addEventListener('resize',resize); addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=1;if(e.code==='Space'&&running)paused=!paused});
+addEventListener('keyup',e=>keys[e.key.toLowerCase()]=0);
+c.addEventListener('mousedown',e=>{if(running&&!paused)shoot(e.clientX,e.clientY)});
+document.getElementById('go').onclick=()=>{reset(true);running=true;document.getElementById('start').style.display='none';requestAnimationFrame(loop)};
+function reset(start=true){
+ hero={x:W*.18,y:H*.55,vx:0,vy:0,r:18,on:false};
+ platforms=[{x:0,y:H-45,w:W*1.5,h:45}];
+ stars=[];drones=[];web=null;score=0;lives=3;spawn=0;last=performance.now();
+ if(start) for(let i=0;i<7;i++) addPlatform(W*.25+i*170,H-150-(i%3)*80);
+ updateUI();
+}
+function addPlatform(px,py){platforms.push({x:px,y:py,w:130+Math.random()*70,h:14})}
+function shoot(tx,ty){const dx=tx-hero.x,dy=ty-hero.y,len=Math.hypot(dx,dy)||1;web={x:hero.x,y:hero.y,tx,ty,vx:dx/len*22,vy:dy/len*22,life:55}}
+function spawnThing(){
+const px=W+50, py=100+Math.random()*(H-220);
+if(Math.random()<.58)stars.push({x:px,y:py,r:9}); else drones.push({x:px,y:py,r:17,vx:-4-Math.random()*2});
+addPlatform(px,py+70);
+}
+function update(dt){
+const s=dt/16.67;
+if(keys.arrowleft||keys.a)hero.vx-=.65*s;if(keys.arrowright||keys.d)hero.vx+=.65*s;
+hero.vx*=Math.pow(.90,s);hero.vx=Math.max(-7,Math.min(9,hero.vx));
+hero.vy+=.55*s;hero.x+=hero.vx*s;hero.y+=hero.vy*s;
+if(hero.x<20)hero.x=20;if(hero.x>W-20)hero.x=W-20;
+if(web){web.x+=web.vx*s;web.y+=web.vy*s;web.life-=s;hero.vy-=.7*s;if(web.life<=0)web=null}
+hero.on=false;
+for(const p of platforms){p.x-=3.2*s;if(hero.vy>=0&&hero.x>p.x&&hero.x<p.x+p.w&&hero.y+hero.r>=p.y&&hero.y+hero.r<=p.y+20){hero.y=p.y-hero.r;hero.vy=0;hero.on=true}}
+platforms=platforms.filter(p=>p.x+p.w>-20);
+for(const q of stars){q.x-=4.2*s;if(Math.hypot(q.x-hero.x,q.y-hero.y)<q.r+hero.r){q.dead=true;score+=10}}
+stars=stars.filter(q=>!q.dead&&q.x>-30);
+for(const d of drones){d.x+=d.vx*s;if(Math.hypot(d.x-hero.x,d.y-hero.y)<d.r+hero.r){d.dead=true;lives--;hero.vy=-9; if(lives<=0)gameOver()}}
+drones=drones.filter(d=>!d.dead&&d.x>-40);
+spawn-=dt;if(spawn<0){spawn=700+Math.random()*650;spawnThing()}
+if(hero.y>H+80){lives--;hero.x=W*.18;hero.y=H*.4;hero.vy=0;if(lives<=0)gameOver()}
+updateUI();
+}
+function gameOver(){running=false;document.getElementById('start').style.display='grid';document.querySelector('.card').innerHTML='<h2>Игра окончена</h2><p>Счёт: '+score+'</p><button id="go">Сыграть ещё</button>';document.getElementById('go').onclick=()=>{reset(true);running=true;document.getElementById('start').style.display='none';requestAnimationFrame(loop)}}
+function updateUI(){scoreEl.textContent='Очки: '+score+' · Жизни: '+lives}
+function draw(){
+x.clearRect(0,0,W,H);
+let g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,'#07162d');g.addColorStop(1,'#182e4b');x.fillStyle=g;x.fillRect(0,0,W,H);
+x.fillStyle='#0b1727';for(let i=0;i<18;i++){let bx=(i*83-(score*0.3)%83);let bh=80+(i*37)%190;x.fillRect(bx,H-45-bh,58,bh)}
+for(const p of platforms){x.fillStyle='#8c9aaa';x.fillRect(p.x,p.y,p.w,p.h);x.fillStyle='#d5dce4';x.fillRect(p.x,p.y,p.w,3)}
+for(const q of stars){x.save();x.translate(q.x,q.y);x.rotate(performance.now()/600);x.fillStyle='#ffd84d';x.beginPath();for(let i=0;i<10;i++){let a=i*Math.PI/5,r=i%2?q.r*.45:q.r;x.lineTo(Math.cos(a)*r,Math.sin(a)*r)}x.fill();x.restore()}
+for(const d of drones){x.fillStyle='#e44b5b';x.beginPath();x.arc(d.x,d.y,d.r,0,7);x.fill();x.fillStyle='#101820';x.fillRect(d.x-8,d.y-3,16,6)}
+if(web){x.strokeStyle='#fff';x.lineWidth=2;x.beginPath();x.moveTo(hero.x,hero.y);x.lineTo(web.x,web.y);x.stroke()}
+drawHero();
+if(paused&&running){x.fillStyle='#0008';x.fillRect(0,0,W,H);x.fillStyle='#fff';x.font='bold 34px system-ui';x.textAlign='center';x.fillText('ПАУЗА',W/2,H/2)}
+}
+function drawHero(){
+x.save();x.translate(hero.x,hero.y);x.rotate(hero.vx*.025);
+x.fillStyle='#d7192f';x.beginPath();x.arc(0,0,19,0,7);x.fill();
+x.fillStyle='#151b25';x.beginPath();x.arc(0,-5,12,0,7);x.fill();
+x.fillStyle='#fff';x.beginPath();x.ellipse(-5,-7,3.5,7,-.3,0,7);x.ellipse(5,-7,3.5,7,.3,0,7);x.fill();
+x.strokeStyle='#fff';x.lineWidth=1;for(let a=0;a<8;a++){x.beginPath();x.moveTo(0,-5);x.lineTo(Math.cos(a*Math.PI/4)*15,-5+Math.sin(a*Math.PI/4)*15);x.stroke()}
+x.fillStyle='#d7192f';x.fillRect(-13,12,9,15);x.fillRect(4,12,9,15);x.restore();
+}
+function loop(t){if(!running)return;let dt=Math.min(32,t-last);last=t;if(!paused)update(dt);draw();requestAnimationFrame(loop)}
+resize();
+</script>
+</body></html>
