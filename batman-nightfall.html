@@ -13,7 +13,7 @@
 <div id="intro"><div class="panel"><div class="kicker">AN ORIGINAL FAN-MADE BATMAN EXPERIENCE</div><div class="title">GOTHAM<br><span>NIGHTFALL</span></div><div class="copy">Ночь. Готэм тонет в дожде. Серия исчезновений связана с подпольной сетью, которая готовит удар по центру города. Ты — Бэтмен. Исследуй улицы, выслеживай цели и переживи ночь.</div><button class="btn" id="start">ENTER GOTHAM</button><div class="hint">WASD / стрелки — движение · Shift — рывок · ЛКМ — бэтаранг · E — взаимодействие</div></div></div>
 <div id="end" style="display:none"><div class="panel"><div class="kicker">NIGHT COMPLETE</div><div class="title" id="ending">GOTHAM SURVIVES</div><div class="copy" id="endingCopy"></div><button class="btn" id="again">RETURN TO THE NIGHT</button></div></div>
 <script>
-const C=document.getElementById('c'),g=C.getContext('2d');let W,H,D,keys={},mouse={x:0,y:0,down:false},hero,foes,particles,buildings,shots,score,mission,over,started=false,t=0;
+const C=document.getElementById('c'),g=C.getContext('2d');let W,H,D,keys={},mouse={x:0,y:0,down:false},hero={x:0,y:0,r:15,hp:100,vx:0,vy:0,cd:0,dash:0},foes=[],particles=[],buildings=[],shots=[],score=0,mission=0,over=false,started=false,t=0;
 function resize(){D=devicePixelRatio||1;W=innerWidth;H=innerHeight;C.width=W*D;C.height=H*D;g.setTransform(D,0,0,D,0,0)}addEventListener('resize',resize);resize();
 addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key==='Shift')keys.shift=true});addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 C.addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY});C.addEventListener('mousedown',()=>mouse.down=true);addEventListener('mouseup',()=>mouse.down=false);
@@ -33,7 +33,7 @@ shots=shots.filter(q=>q.life>0&&q.x>-30&&q.x<W+30&&q.y>-30&&q.y<H+30);
 for(const f of foes){f.x+=f.vx*s;f.y+=Math.sin(t*.04+f.phase)*.45*s;if(Math.hypot(f.x-hero.x,f.y-hero.y)<f.r+hero.r){hero.hp-=.45*s;f.x-=f.vx*3*s}if(f.x<-50){f.x=W+30;f.y=H-95-Math.random()*220}}
 foes=foes.filter(f=>!f.dead);
 if(Math.random()<.008*s)spawnFoe();if(Math.random()<.018*s)score++;
-if(hero.hp<=0){finish(false);return}if(score>1200){mission=1;document.getElementById('mission').textContent='Сигнал: операция завершена — Готэм на рассвете';}
+if(hero.hp<=0){finish(false);return}if(score>=1200){finish(true);return}if(score>1200){mission=1;document.getElementById('mission').textContent='Сигнал: операция завершена — Готэм на рассвете';}
 updateHud()}
 function finish(win){over=true;document.getElementById('end').style.display='grid';document.getElementById('ending').textContent=win?'GOTHAM SURVIVES':'THE NIGHT WINS';document.getElementById('endingCopy').textContent=win?'Ты очистил улицы до рассвета. Город не узнает, насколько близко подошла катастрофа. Счёт: '+score+'.':'Сигнал погас. Готэм остался без своего защитника. Счёт: '+score+'.'}
 function updateHud(){document.getElementById('hp').textContent=Math.max(0,Math.round(hero?.hp||100));document.getElementById('score').textContent=String(score||0).padStart(6,'0');document.getElementById('threat').textContent=foes?.length>12?'HIGH':foes?.length>8?'MED':'LOW'}
@@ -44,10 +44,11 @@ g.strokeStyle='#ffffff10';for(let i=0;i<100;i++){let x=(i*83+t*4)%W;let y=(i*47+
 for(const q of shots){g.strokeStyle='#d9dde4';g.lineWidth=2;g.beginPath();g.moveTo(q.x,q.y);g.lineTo(q.x-q.vx*2,q.y-q.vy*2);g.stroke()}
 for(const f of foes){g.save();g.translate(f.x,f.y);g.fillStyle='#9b2431';g.beginPath();g.arc(0,0,f.r,0,7);g.fill();g.fillStyle='#0b0d12';g.fillRect(-7,-3,14,6);g.restore()}
 for(const p of particles){g.fillStyle='rgba(190,200,215,.35)';g.fillRect(p.x,p.y,3,3)}
-drawHero();if(!started){g.fillStyle='#fff'}}
+if(hero)drawHero();if(!started){g.fillStyle='#fff'}}
 function drawHero(){g.save();g.translate(hero.x,hero.y);let a=Math.atan2(mouse.y-hero.y,mouse.x-hero.x);g.rotate(a*.08);
 g.shadowBlur=22;g.shadowColor='#000';g.fillStyle='#090b10';g.beginPath();g.moveTo(-17,12);g.lineTo(-31,28);g.lineTo(-17,23);g.lineTo(-8,34);g.lineTo(0,21);g.lineTo(9,34);g.lineTo(18,23);g.lineTo(31,28);g.lineTo(17,12);g.closePath();g.fill();
 g.fillStyle='#111722';g.beginPath();g.arc(0,0,17,0,7);g.fill();g.fillStyle='#b9c2ce';g.beginPath();g.ellipse(-6,-4,4,8,-.35,0,7);g.ellipse(6,-4,4,8,.35,0,7);g.fill();g.strokeStyle='#05070a';g.lineWidth=2;g.beginPath();g.moveTo(-8,10);g.lineTo(8,10);g.stroke();g.restore()}
 function loop(now){let dt=Math.min(32,now-(loop.last||now));loop.last=now;if(started&&!over)update(dt);draw();requestAnimationFrame(loop)}
+window.addEventListener('error',e=>{const q=document.getElementById('toast');q.textContent='Ошибка игры: '+e.message;q.style.opacity=1;q.style.zIndex=20;});
 document.getElementById('start').onclick=()=>{document.getElementById('intro').style.display='none';started=true;reset()};document.getElementById('again').onclick=()=>{document.getElementById('end').style.display='none';reset()};requestAnimationFrame(loop);
 </script></body></html>
