@@ -1,87 +1,41 @@
-<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GOTHAM: NIGHTFALL</title>
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GOTHAM: AFTER MIDNIGHT</title>
 <style>
-*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;background:#05070b;color:#e8edf5;font-family:Inter,system-ui,Arial}canvas{width:100%;height:100%;display:block}
-#hud{position:fixed;inset:0;pointer-events:none;padding:22px;display:flex;justify-content:space-between;text-shadow:0 2px 12px #000}
-.brand{font-weight:900;letter-spacing:.2em;font-size:14px}.mission{margin-top:8px;font-size:13px;color:#9ca9ba}.right{text-align:right;font-variant-numeric:tabular-nums}
-#intro,#end{position:fixed;inset:0;display:grid;place-items:center;background:radial-gradient(circle at 50% 42%,#101722aa,#020307ee 70%);z-index:10}
-.panel{width:min(650px,90vw);padding:38px;border:1px solid #ffffff18;background:#080b11dd;box-shadow:0 25px 100px #000;border-radius:4px}
-.kicker{color:#aab5c4;letter-spacing:.22em;font-size:11px}.title{font-size:clamp(42px,8vw,88px);line-height:.9;margin:12px 0;font-weight:1000;letter-spacing:-.05em}.title span{color:#c5cad2}.copy{color:#9ba6b4;line-height:1.7}.btn{pointer-events:auto;position:relative;z-index:20;background:#d7dbe0;color:#080a0e;border:0;padding:13px 24px;font-weight:900;letter-spacing:.08em;cursor:pointer;margin-top:14px}.btn:active{transform:translateY(1px)}.hint{font-size:12px;color:#687484;margin-top:15px}
-#toast{position:fixed;left:50%;bottom:11%;transform:translateX(-50%);opacity:0;transition:.25s;color:#dfe5ec;background:#070a0fdd;padding:11px 17px;border:1px solid #ffffff18;z-index:30}
+*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;background:#06070b;color:#eee;font-family:Georgia,serif}canvas{display:block;width:100%;height:100%}
+#ui{position:fixed;inset:0;pointer-events:none}.top{padding:20px 24px;display:flex;justify-content:space-between;font:12px Arial;color:#aeb6c4;letter-spacing:.12em}.top b{color:#eee}
+#intro,#dialog,#end{position:fixed;inset:0;display:grid;place-items:center;background:rgba(3,4,8,.78);z-index:10}
+.panel{width:min(720px,92vw);padding:34px;background:linear-gradient(145deg,#11151d,#080a0f);border:1px solid #ffffff1c;box-shadow:0 30px 100px #000}
+h1{font-size:clamp(42px,7vw,78px);line-height:.85;margin:10px 0 20px;letter-spacing:-.04em}h1 span{color:#8d9caf}.small{font:11px Arial;letter-spacing:.2em;color:#8490a1}.copy{color:#b0b5bf;line-height:1.65;font-size:16px}
+button{pointer-events:auto;border:1px solid #ffffff28;background:#d9dde2;color:#090b10;padding:12px 20px;margin:7px 5px 0 0;font-weight:bold;cursor:pointer}button:hover{background:#fff}
+#dialog{display:none;background:rgba(2,3,6,.45);align-items:end;padding-bottom:35px}.dialogbox{width:min(900px,94vw);background:#090b10eF;border:1px solid #ffffff22;padding:22px;box-shadow:0 20px 80px #000}.speaker{font:11px Arial;letter-spacing:.2em;color:#8d9caf}.line{font-size:21px;line-height:1.45;margin:8px 0 14px}.choices button{background:#121721;color:#ddd;border-color:#ffffff20;text-align:left}
+#toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#090b10dd;border:1px solid #ffffff20;padding:10px 16px;font:12px Arial;opacity:0;z-index:30}
 </style></head><body><canvas id="c"></canvas>
-<div id="hud"><div><div class="brand">GOTHAM / NIGHTFALL</div><div class="mission" id="mission">Сигнал: крыша Monarch Theatre</div></div><div class="right">HEALTH <b id="hp">100</b><br>THREAT <b id="threat">LOW</b><br>SCORE <b id="score">000000</b></div></div>
+<div id="ui"><div class="top"><div>GOTHAM / AFTER MIDNIGHT<br><span id="objective">ОСМОТРЕТЬ МЕСТО ПРЕСТУПЛЕНИЯ</span></div><div>УЛИКИ <b id="ev">0/5</b> · ПОДОЗРЕНИЕ <b id="sus">0%</b> · ХИМИЯ <b id="chem">0</b></div></div></div>
 <div id="toast"></div>
-<div id="intro"><div class="panel"><div class="kicker">AN ORIGINAL FAN-MADE BATMAN EXPERIENCE</div><div class="title">GOTHAM<br><span>NIGHTFALL</span></div><div class="copy">Ночь. Готэм тонет в дожде. Серия исчезновений связана с подпольной сетью, которая готовит удар по центру города. Ты — Бэтмен. Исследуй улицы, выслеживай цели и переживи ночь.</div><button class="btn" id="start" type="button" onclick="startGame()">ENTER GOTHAM</button><div class="hint">WASD / стрелки — движение · Shift — рывок · ЛКМ — бэтаранг · E — взаимодействие</div></div></div>
-<div id="end" style="display:none"><div class="panel"><div class="kicker">NIGHT COMPLETE</div><div class="title" id="ending">GOTHAM SURVIVES</div><div class="copy" id="endingCopy"></div><button class="btn" id="again" type="button" onclick="restartGame()">RETURN TO THE NIGHT</button></div></div>
+<div id="intro"><div class="panel"><div class="small">ORIGINAL FAN-MADE NOIR EXPERIENCE · 18+</div><h1>GOTHAM<br><span>AFTER MIDNIGHT</span></h1><div class="copy">03:17. Дождь. Роскошный клуб «Velvet». Владелицу нашли мёртвой в закрытом кабинете. Полиция считает это ограблением. Ты знаешь: слишком чисто.</div><p class="copy">В этой версии ты не фармишь врагов. Ты расследуешь дело: изучай место преступления, ищи противоречия, следи за подозреваемыми и решай, кому доверять.</p><button onclick="startGame()">НАЧАТЬ РАССЛЕДОВАНИЕ</button><div class="small" style="margin-top:16px">WASD — осмотр · SHIFT — тихое перемещение · E — взаимодействие · SPACE — режим детектива · ЛКМ — выбор</div></div></div>
+<div id="dialog"><div class="dialogbox"><div class="speaker" id="speaker"></div><div class="line" id="line"></div><div class="choices" id="choices"></div></div></div>
+<div id="end"><div class="panel"><div class="small">CASE FILE CLOSED</div><h1 id="ending">ДЕЛО ЗАКРЫТО</h1><div class="copy" id="endcopy"></div><button onclick="location.reload()">НОВОЕ ДЕЛО</button></div></div>
 <script>
-const C=document.getElementById('c'),g=C.getContext('2d');
-let W=0,H=0,D=1,keys={},mouse={x:0,y:0,down:false},hero={x:0,y:0,r:15,hp:100,vx:0,vy:0,cd:0,dash:0},foes=[],particles=[],buildings=[],shots=[],score=0,over=false,started=false,t=0;
-
-function resize(){D=window.devicePixelRatio||1;W=window.innerWidth;H=window.innerHeight;C.width=W*D;C.height=H*D;g.setTransform(D,0,0,D,0,0)}
-window.addEventListener('resize',resize);resize();
-
-window.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true});
-window.addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});
-C.addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY});
-C.addEventListener('mousedown',()=>mouse.down=true);
-window.addEventListener('mouseup',()=>mouse.down=false);
-
-function reset(){
- hero={x:W*.5,y:H*.72,r:15,hp:100,vx:0,vy:0,cd:0,dash:0};
- foes=[];shots=[];particles=[];buildings=[];score=0;over=false;t=0;
- for(let i=0;i<28;i++)buildings.push({x:i*130-Math.random()*80,w:75+Math.random()*70,h:100+Math.random()*230,seed:Math.random()});
- for(let i=0;i<8;i++)spawnFoe(true);
- updateHud();
-}
-function spawnFoe(initial=false){foes.push({x:initial?Math.random()*W:W+40,y:H-95-Math.random()*220,r:13,hp:2,vx:-.6-Math.random()*1.1,phase:Math.random()*9})}
-function toast(s){const q=document.getElementById('toast');q.textContent=s;q.style.opacity=1;clearTimeout(q._t);q._t=setTimeout(()=>q.style.opacity=0,1400)}
-function shoot(){if(hero.cd>0)return;const a=Math.atan2(mouse.y-hero.y,mouse.x-hero.x);shots.push({x:hero.x,y:hero.y,vx:Math.cos(a)*12,vy:Math.sin(a)*12,life:70});hero.cd=12}
-
-function startGame(){
- try{
-  document.getElementById('intro').style.display='none';
-  document.getElementById('end').style.display='none';
-  started=true;reset();toast('ГОТЭМ ОТКРЫТ. НОЧЬ НАЧАЛАСЬ.');
- }catch(e){showError(e)}
-}
-function restartGame(){document.getElementById('end').style.display='none';started=true;reset()}
-function showError(e){const q=document.getElementById('toast');q.textContent='Ошибка запуска: '+(e&&e.message?e.message:e);q.style.opacity=1;q.style.zIndex=99}
-
-function update(dt){
- const s=dt/16.67;t+=s;if(over)return;
- const ax=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0),ay=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);
- const n=Math.hypot(ax,ay)||1;
- if(keys.shift&&hero.dash<=0){hero.vx=ax/n*14;hero.vy=ay/n*14;hero.dash=65;for(let i=0;i<12;i++)particles.push({x:hero.x,y:hero.y,vx:(Math.random()-.5)*3,vy:(Math.random()-.5)*3,life:18})}
- else{hero.vx+=ax*.75*s;hero.vy+=ay*.75*s;hero.vx*=Math.pow(.84,s);hero.vy*=Math.pow(.84,s)}
- hero.x+=hero.vx*s;hero.y+=hero.vy*s;hero.x=Math.max(25,Math.min(W-25,hero.x));hero.y=Math.max(H*.2,Math.min(H-70,hero.y));hero.dash-=s;hero.cd-=s;
- if(mouse.down)shoot();
- for(const q of shots){q.x+=q.vx*s;q.y+=q.vy*s;q.life-=s;for(const f of foes)if(!f.dead&&Math.hypot(q.x-f.x,q.y-f.y)<f.r+5){f.hp--;q.life=0;if(f.hp<=0){f.dead=true;score+=100;for(let j=0;j<10;j++)particles.push({x:f.x,y:f.y,vx:(Math.random()-.5)*5,vy:(Math.random()-.5)*5,life:25})}}}
- shots=shots.filter(q=>q.life>0&&q.x>-30&&q.x<W+30&&q.y>-30&&q.y<H+30);
- for(const f of foes){f.x+=f.vx*s;f.y+=Math.sin(t*.04+f.phase)*.45*s;if(Math.hypot(f.x-hero.x,f.y-hero.y)<f.r+hero.r){hero.hp-=.45*s;f.x-=f.vx*3*s}if(f.x<-50){f.x=W+30;f.y=H-95-Math.random()*220}}
- foes=foes.filter(f=>!f.dead);
- if(Math.random()<.008*s)spawnFoe();if(Math.random()<.018*s)score++;
- if(hero.hp<=0){finish(false);return}if(score>=1200){finish(true);return}
- updateHud();
-}
-function finish(win){over=true;document.getElementById('end').style.display='grid';document.getElementById('ending').textContent=win?'GOTHAM SURVIVES':'THE NIGHT WINS';document.getElementById('endingCopy').textContent=win?'Ты очистил улицы до рассвета. Город не узнает, насколько близко подошла катастрофа. Счёт: '+score+'.':'Сигнал погас. Готэм остался без своего защитника. Счёт: '+score+'.'}
-function updateHud(){document.getElementById('hp').textContent=Math.max(0,Math.round(hero.hp||100));document.getElementById('score').textContent=String(score||0).padStart(6,'0');document.getElementById('threat').textContent=foes.length>12?'HIGH':foes.length>8?'MED':'LOW'}
-
-function draw(){
- const sky=g.createLinearGradient(0,0,0,H);sky.addColorStop(0,'#05080f');sky.addColorStop(.55,'#111a26');sky.addColorStop(1,'#25303a');g.fillStyle=sky;g.fillRect(0,0,W,H);
- g.fillStyle='#0a0e15';
- for(const b of buildings){const x=b.x-(score*.18%130);g.fillRect(x,H-50-b.h,b.w,b.h);g.fillStyle='#d9b85a';for(let yy=H-65-b.h;yy<H-65;yy+=18)for(let xx=x+10;xx<x+b.w-5;xx+=18)if((xx+yy+b.seed*100)%3<1.1)g.fillRect(xx,yy,5,4);g.fillStyle='#0a0e15'}
- g.fillStyle='#151b24';g.fillRect(0,H-48,W,48);
- g.strokeStyle='#ffffff10';g.lineWidth=1;for(let i=0;i<100;i++){const x=(i*83+t*4)%W,y=(i*47+t*11)%H;g.beginPath();g.moveTo(x,y);g.lineTo(x-5,y+20);g.stroke()}
- for(const q of shots){g.strokeStyle='#d9dde4';g.lineWidth=2;g.beginPath();g.moveTo(q.x,q.y);g.lineTo(q.x-q.vx*2,q.y-q.vy*2);g.stroke()}
- for(const f of foes){g.save();g.translate(f.x,f.y);g.fillStyle='#9b2431';g.beginPath();g.arc(0,0,f.r,0,Math.PI*2);g.fill();g.fillStyle='#0b0d12';g.fillRect(-7,-3,14,6);g.restore()}
- for(const p of particles){g.fillStyle='rgba(190,200,215,.35)';g.fillRect(p.x,p.y,3,3)}
- drawHero();
-}
-function drawHero(){
- g.save();g.translate(hero.x,hero.y);const a=Math.atan2(mouse.y-hero.y,mouse.x-hero.x);g.rotate(a*.08);g.shadowBlur=22;g.shadowColor='#000';g.fillStyle='#090b10';
- g.beginPath();g.moveTo(-17,12);g.lineTo(-31,28);g.lineTo(-17,23);g.lineTo(-8,34);g.lineTo(0,21);g.lineTo(9,34);g.lineTo(18,23);g.lineTo(31,28);g.lineTo(17,12);g.closePath();g.fill();
- g.fillStyle='#111722';g.beginPath();g.arc(0,0,17,0,Math.PI*2);g.fill();g.fillStyle='#b9c2ce';g.beginPath();g.ellipse(-6,-4,4,8,-.35,0,Math.PI*2);g.ellipse(6,-4,4,8,.35,0,Math.PI*2);g.fill();g.strokeStyle='#05070a';g.lineWidth=2;g.beginPath();g.moveTo(-8,10);g.lineTo(8,10);g.stroke();g.restore();
-}
-function loop(now){const dt=Math.min(32,now-(loop.last||now));loop.last=now;if(started&&!over)update(dt);draw();requestAnimationFrame(loop)}
-window.addEventListener('error',e=>showError(e));
-requestAnimationFrame(loop);
+const c=document.getElementById('c'),g=c.getContext('2d');let W,H,D,keys={},hero,clues=[],suspects=[],evidence=0,suspicion=0,chem=0,started=false,dialog=false,ending=false,t=0;
+function resize(){D=devicePixelRatio||1;W=innerWidth;H=innerHeight;c.width=W*D;c.height=H*D;g.setTransform(D,0,0,D,0,0)}addEventListener('resize',resize);resize();
+addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.code==='Space'&&started&&!dialog){scan()}if(e.key.toLowerCase()==='e'&&started&&!dialog){interact()}});addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+c.addEventListener('click',e=>{if(started&&!dialog){const x=e.clientX,y=e.clientY;for(const s of suspects)if(Math.hypot(s.x-x,s.y-y)<32){talk(s)}}});
+function startGame(){document.getElementById('intro').style.display='none';started=true;reset();toast('Дело началось. Найди пять улик.')}
+function reset(){hero={x:W*.5,y:H*.75};evidence=0;suspicion=0;chem=0;t=0;clues=[{x:W*.28,y:H*.34,name:'разбитый бокал',found:false},{x:W*.64,y:H*.30,name:'след каблука',found:false},{x:W*.48,y:H*.48,name:'гильза',found:false},{x:W*.78,y:H*.60,name:'чёрный волос',found:false},{x:W*.22,y:H*.62,name:'записка',found:false}];suspects=[{x:W*.18,y:H*.25,name:'Вивьен',role:'владелица клуба',color:'#8b5368',mood:0},{x:W*.77,y:H*.27,name:'Маркус',role:'телохранитель',color:'#596879',mood:0},{x:W*.78,y:H*.76,name:'Мира',role:'певица',color:'#80634d',mood:0}];updateUI()}
+function toast(s){const q=document.getElementById('toast');q.textContent=s;q.style.opacity=1;clearTimeout(q._t);q._t=setTimeout(()=>q.style.opacity=0,1800)}
+function near(a,b,r=55){return Math.hypot(a.x-b.x,a.y-b.y)<r}
+function scan(){let got=false;for(const cl of clues)if(!cl.found&&near(hero,cl,80)){cl.found=true;evidence++;got=true;toast('Улика обнаружена: '+cl.name);if(evidence===5)document.getElementById('objective').textContent='ДОПРОСИТЬ ПОДОЗРЕВАЕМЫХ'}if(!got)toast('Детективное зрение: рядом ничего важного.');updateUI();if(evidence===5&&chem>=2&&suspicion<55)setTimeout(()=>finale('truth'),500)}
+function interact(){for(const cl of clues)if(!cl.found&&near(hero,cl,65)){scan();return}for(const s of suspects)if(near(hero,s,65)){talk(s);return}toast('Здесь нечего исследовать.')}
+function talk(s){dialog=true;document.getElementById('dialog').style.display='grid';document.getElementById('speaker').textContent=s.name.toUpperCase()+' · '+s.role.toUpperCase();let line='Ты слишком много знаешь для человека, который просто задаёт вопросы.';if(s.name==='Вивьен')line='Она смотрит прямо в глаза. «Если хочешь правду, Брюс... сначала докажи, что ты на моей стороне.»';if(s.name==='Маркус')line='«Камеры выключились на семь минут. Я ничего не видел.» Его голос слишком спокоен.';if(s.name==='Мира')line='«После полуночи она ждала кого-то. И это был не убийца.» Мира задерживает взгляд дольше необходимого.';document.getElementById('line').textContent=line;const box=document.getElementById('choices');box.innerHTML='';[['Давить вопросами',()=>{suspicion+=18;s.mood--;closeDialog();toast('Подозрение растёт.')}],['Сыграть мягко',()=>{chem++;s.mood++;closeDialog();toast('Между вами появляется доверие.')}],['Показать улику',()=>{if(evidence<2){toast('Слишком мало доказательств.');return}evidence=Math.max(0,evidence-1);suspicion+=5;closeDialog();toast('Она/он выдал важную деталь.')}]].forEach(([txt,fn])=>{const b=document.createElement('button');b.textContent=txt;b.onclick=fn;box.appendChild(b)});updateUI()}
+function closeDialog(){dialog=false;document.getElementById('dialog').style.display='none';updateUI();if(evidence>=5&&chem>=2&&suspicion<55)setTimeout(()=>finale('truth'),300)}
+function finale(type){if(ending)return;ending=true;document.getElementById('end').style.display='grid';document.getElementById('ending').textContent=type==='truth'?'ПРАВДА ВЫШЛА НА СВЕТ':'ГОРОД СОХРАНИЛ ТАЙНУ';document.getElementById('endcopy').textContent='Ты собрал '+evidence+' улик. Химия: '+chem+'. Подозрение: '+suspicion+'%. Последняя нить ведёт туда, куда Готэм предпочитает не смотреть. Ночь закончилась, но история только начинается.'}
+function updateUI(){document.getElementById('ev').textContent=evidence+'/5';document.getElementById('sus').textContent=suspicion+'%';document.getElementById('chem').textContent=chem}
+function update(){if(!started||dialog||ending)return;let sp=keys.shift?.8:2.2,dx=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0),dy=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0),n=Math.hypot(dx,dy)||1;hero.x=Math.max(35,Math.min(W-35,hero.x+dx/n*sp));hero.y=Math.max(90,Math.min(H-55,hero.y+dy/n*sp));t++}
+function draw(){g.fillStyle='#090c12';g.fillRect(0,0,W,H);let grad=g.createRadialGradient(W*.5,H*.45,20,W*.5,H*.45,Math.max(W,H)*.7);grad.addColorStop(0,'#222936');grad.addColorStop(1,'#07090d');g.fillStyle=grad;g.fillRect(0,0,W,H);
+g.fillStyle='#11151c';g.fillRect(W*.08,H*.18,W*.84,H*.68);g.strokeStyle='#343b47';g.lineWidth=3;g.strokeRect(W*.08,H*.18,W*.84,H*.68);
+g.fillStyle='#181e28';for(let x=W*.1;x<W*.9;x+=90)g.fillRect(x,H*.20,2,H*.64);
+for(const cl of clues){if(cl.found){g.fillStyle='#d8b36a';g.beginPath();g.arc(cl.x,cl.y,7,0,7);g.fill()}else{g.fillStyle='#5d6470';g.beginPath();g.arc(cl.x,cl.y,4+Math.sin(t*.08)*1.5,0,7);g.fill()}}
+for(const s of suspects){g.fillStyle=s.color;g.beginPath();g.arc(s.x,s.y,23,0,7);g.fill();g.fillStyle='#eee';g.font='13px Arial';g.textAlign='center';g.fillText(s.name,s.x,s.y-32)}
+g.save();g.translate(hero.x,hero.y);g.fillStyle='#050608';g.beginPath();g.arc(0,0,18,0,7);g.fill();g.fillStyle='#bfc6cf';g.fillRect(-8,-5,5,3);g.fillRect(3,-5,5,3);g.fillStyle='#10141b';g.beginPath();g.moveTo(-15,12);g.lineTo(-25,27);g.lineTo(-10,21);g.lineTo(0,32);g.lineTo(10,21);g.lineTo(25,27);g.lineTo(15,12);g.closePath();g.fill();g.restore();
+if(keys.space){g.fillStyle='#ffffff08';g.fillRect(0,0,W,H)}}
+function loop(){update();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);
 </script></body></html>
